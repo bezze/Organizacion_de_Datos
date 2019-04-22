@@ -30,10 +30,26 @@ def finger_1a(n, show=False):
     filt = [auctions.device_id == i for i in top_n]
     for i in range(len(filt) - 1):
         filt[0] ^= filt[i + 1]
+    hours = auctions.date.apply(lambda x: x.hour)
+    days = auctions.date.apply(lambda x: x.day)
+    auctions['hour_series'] = hours
+    auctions['days'] = days
     auctions_filt = auctions[filt[0]]
+
+    df = auctions_filt.pivot_table(index=["hour_series", 'days'], aggfunc={'date': np.count_nonzero}, columns="device_id").unstack('hour_series').mean().unstack('device_id')
+    df=df.reset_index()
+    del df['level_0']
+
     if show:
-        auctions_filt.pivot_table(index=["day"], aggfunc=np.count_nonzero, columns="device_id", values="date").plot.bar()
+        fig, ax = plt.subplots(1,1)
+        plt.plot(df.values[:,0], df.values[:,1:])
+        # auctions_filt.pivot_table(index=["hour_series"], aggfunc=np.count_nonzero, columns="device_id", values="date").plot.bar(ax=ax)
+        ax.set_title('Subastas por hora del día')
+        ax.set_xlabel('Horas')
+        ax.set_ylabel('Ocurrencias')
         plt.show()
+
+    return auctions_filt
 
 
 def finger_1b():
